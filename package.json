@@ -1,0 +1,28 @@
+{
+    "name": "eltoncodebuff",
+    "version": "1.0.0",
+    "description": "A free, open-source AI coding assistant with a beautiful GUI. Uses OpenRouter (free models) or local Ollama — no credits needed.",
+    "main": "server/index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node server/index.js",
+        "dev": "node --watch server/index.js"
+    },
+    "keywords": [
+        "ai",
+        "coding-assistant",
+        "openrouter",
+        "ollama",
+        "code-editor",
+        "free",
+        "open-source"
+    ],
+    "author": "Elton Aguiar",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.21.0",
+        "ws": "^8.18.0",
+        "dotenv": "^16.4.5",
+        "open": "^10.1.0"
+    }
+}

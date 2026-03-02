@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EltonCodeBuff — Free AI Coding Assistant</title>
+  <meta name="description"
+    content="A free, open-source AI coding assistant powered by OpenRouter and Ollama. No credits needed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+
+<body>
+  <!-- ═══ SETUP WIZARD (shown if not configured) ═══ -->
+  <div id="setup-wizard" class="hidden">
+    <div class="wizard-backdrop"></div>
+    <div class="wizard-container">
+      <div class="wizard-glow"></div>
+      <div class="wizard-content">
+        <div class="wizard-logo">
+          <span class="logo-icon">⚡</span>
+          <h1>EltonCodeBuff</h1>
+          <p class="wizard-subtitle">Free AI Coding Assistant</p>
+        </div>
+
+        <!-- Step 1: Choose Provider -->
+        <div class="wizard-step" id="wizard-step-1">
+          <h2>Choose your AI Provider</h2>
+          <p class="step-desc">Pick how you want to power your coding assistant. All options are free!</p>
+          <div class="provider-cards">
+            <button class="provider-card" data-provider="openrouter" id="btn-provider-openrouter">
+              <div class="provider-icon">🌐</div>
+              <div class="provider-info">
+                <h3>OpenRouter</h3>
+                <p>Access 100+ AI models. Many free options including Gemini, Llama, Mistral and more.</p>
+                <span class="badge badge-recommended">Recommended</span>
+              </div>
+            </button>
+            <button class="provider-card" data-provider="ollama" id="btn-provider-ollama">
+              <div class="provider-icon">🦙</div>
+              <div class="provider-info">
+                <h3>Ollama (Local)</h3>
+                <p>Run models on your own machine. Completely private, no internet needed.</p>
+                <span class="badge badge-local">100% Local</span>
+              </div>
+            </button>
+            <button class="provider-card" data-provider="custom" id="btn-provider-custom">
+              <div class="provider-icon">🔧</div>
+              <div class="provider-info">
+                <h3>Custom API</h3>
+                <p>Any OpenAI-compatible endpoint. LM Studio, vLLM, text-generation-webui, etc.</p>
+                <span class="badge badge-advanced">Advanced</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Configure Provider -->
+        <div class="wizard-step hidden" id="wizard-step-2">
+          <h2 id="config-title">Configure OpenRouter</h2>
+
+          <!-- OpenRouter Config -->
+          <div id="config-openrouter" class="config-panel">
+            <div class="form-group">
+              <label for="or-api-key">API Key</label>
+              <p class="form-hint">Get a free key at <a href="https://openrouter.ai/keys"
+                  target="_blank">openrouter.ai/keys</a></p>
+              <input type="password" id="or-api-key" placeholder="sk-or-v1-..." autocomplete="off">
+            </div>
+            <div class="form-group">
+              <label for="or-model">Default Model</label>
+              <p class="form-hint">Free models are marked with ✨</p>
+              <select id="or-model">
+                <option value="meta-llama/llama-4-maverick:free">✨ Llama 4 Maverick (Free, Recommended)</option>
+                <option value="meta-llama/llama-4-scout:free">✨ Llama 4 Scout (Free)</option>
+                <option value="meta-llama/llama-3.3-70b-instruct:free">✨ Llama 3.3 70B (Free)</option>
+                <option value="deepseek/deepseek-chat-v3-0324:free">✨ DeepSeek V3 (Free)</option>
+                <option value="deepseek/deepseek-r1-zero:free">✨ DeepSeek R1 Zero (Free, Reasoning)</option>
+                <option value="qwen/qwen-2.5-coder-32b-instruct:free">✨ Qwen 2.5 Coder 32B (Free)</option>
+                <option value="mistralai/mistral-small-3.1-24b-instruct:free">✨ Mistral Small 3.1 (Free)</option>
+                <option value="google/gemma-3-27b-it:free">✨ Google Gemma 3 27B (Free)</option>
+                <option value="nvidia/llama-3.1-nemotron-nano-8b-v1:free">✨ Nemotron Nano 8B (Free)</option>
+                <option value="anthropic/claude-sonnet-4">Claude Sonnet 4 (Paid)</option>
+                <option value="openai/gpt-4o">GPT-4o (Paid)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Ollama Config -->
+          <div id="config-ollama" class="config-panel hidden">
+            <div class="form-group">
+              <label for="ol-url">Ollama URL</label>
+              <p class="form-hint">Default: http://localhost:11434</p>
+              <input type="text" id="ol-url" placeholder="http://localhost:11434" value="http://localhost:11434">
+            </div>
+            <div class="form-group">
+              <label for="ol-model">Model</label>
+              <p class="form-hint">Make sure it's pulled: <code>ollama pull codellama</code></p>
+              <input type="text" id="ol-model" placeholder="codellama" value="codellama">
+            </div>
+          </div>
+
+          <!-- Custom Config -->
+          <div id="config-custom" class="config-panel hidden">
+            <div class="form-group">
+              <label for="cu-url">API Base URL</label>
+              <p class="form-hint">OpenAI-compatible endpoint (e.g., http://localhost:1234/v1)</p>
+              <input type="text" id="cu-url" placeholder="http://localhost:1234/v1">
+            </div>
+            <div class="form-group">
+              <label for="cu-key">API Key (optional)</label>
+              <input type="password" id="cu-key" placeholder="Leave blank if not needed">
+            </div>
+            <div class="form-group">
+              <label for="cu-model">Model Name</label>
+              <input type="text" id="cu-model" placeholder="gpt-3.5-turbo">
+            </div>
+          </div>
+
+          <div class="wizard-actions">
+            <button class="btn btn-ghost" id="wizard-back">← Back</button>
+            <button class="btn btn-primary" id="wizard-save">Launch EltonCodeBuff →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN APP ═══ -->
+  <div id="app" class="hidden">
+    <!-- Top Bar -->
+    <header class="topbar" id="topbar">
+      <div class="topbar-left">
+        <span class="topbar-logo">⚡</span>
+        <h1 class="topbar-title">EltonCodeBuff</h1>
+        <span class="topbar-badge" id="provider-badge">OpenRouter</span>
+      </div>
+      <div class="topbar-center">
+        <div class="project-path-group">
+          <input type="text" id="project-path" class="project-path-input"
+            placeholder="Enter project folder path (e.g., C:\MyProject)">
+          <button class="btn btn-sm btn-accent" id="btn-load-project">Load Project</button>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <select id="model-selector" class="model-select">
+          <option>Loading models...</option>
+        </select>
+        <button class="btn btn-icon" id="btn-settings" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Sidebar: File Explorer -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h2>📁 Files</h2>
+          <button class="btn btn-icon btn-sm" id="btn-toggle-sidebar" title="Toggle sidebar">◀</button>
+        </div>
+        <div class="file-tree" id="file-tree">
+          <div class="file-tree-empty">
+            <p>Load a project to browse files</p>
+          </div>
+        </div>
+        <div class="sidebar-search">
+          <input type="text" id="file-search" placeholder="🔍 Search in files...">
+        </div>
+      </aside>
+
+      <!-- Chat Panel -->
+      <section class="chat-panel" id="chat-panel">
+        <div class="chat-messages" id="chat-messages">
+          <div class="welcome-message">
+            <div class="welcome-icon">⚡</div>
+            <h2>Welcome to EltonCodeBuff</h2>
+            <p>Your free AI coding assistant. Ask me anything about code!</p>
+            <div class="welcome-suggestions">
+              <button class="suggestion-chip" data-prompt="Help me understand this codebase">📖 Understand
+                codebase</button>
+              <button class="suggestion-chip" data-prompt="Find and fix bugs in my code">🐛 Find bugs</button>
+              <button class="suggestion-chip" data-prompt="Help me refactor this code for better performance">🚀
+                Optimize code</button>
+              <button class="suggestion-chip" data-prompt="Write unit tests for my functions">🧪 Write tests</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="attached-files" id="attached-files"></div>
+          <div class="chat-input-group">
+            <button class="btn btn-icon" id="btn-attach" title="Attach file to context">📎</button>
+            <textarea id="chat-input" placeholder="Ask me anything about your code..." rows="1"></textarea>
+            <button class="btn btn-primary btn-send" id="btn-send" title="Send message">
+              <span class="send-icon">↑</span>
+            </button>
+          </div>
+          <div class="chat-status" id="chat-status"></div>
+        </div>
+      </section>
+
+      <!-- Code Viewer (shown when a file is opened) -->
+      <aside class="code-viewer hidden" id="code-viewer">
+        <div class="code-viewer-header">
+          <span class="code-viewer-filename" id="code-viewer-filename"></span>
+          <button class="btn btn-icon btn-sm" id="btn-close-viewer" title="Close">✕</button>
+        </div>
+        <pre class="code-viewer-content"><code id="code-viewer-content"></code></pre>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal hidden" id="settings-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Settings</h2>
+        <button class="btn btn-icon" id="btn-close-settings">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Provider</label>
+          <select id="settings-provider">
+            <option value="openrouter">OpenRouter</option>
+            <option value="ollama">Ollama (Local)</option>
+            <option value="custom">Custom API</option>
+          </select>
+        </div>
+        <div id="settings-openrouter-fields">
+          <div class="form-group">
+            <label>OpenRouter API Key</label>
+            <input type="password" id="settings-or-key" placeholder="sk-or-v1-...">
+          </div>
+        </div>
+        <div id="settings-ollama-fields" class="hidden">
+          <div class="form-group">
+            <label>Ollama URL</label>
+            <input type="text" id="settings-ol-url" placeholder="http://localhost:11434">
+          </div>
+          <div class="form-group">
+            <label>Ollama Model</label>
+            <input type="text" id="settings-ol-model" placeholder="codellama">
+          </div>
+        </div>
+        <div id="settings-custom-fields" class="hidden">
+          <div class="form-group">
+            <label>Custom Base URL</label>
+            <input type="text" id="settings-cu-url" placeholder="http://localhost:1234/v1">
+          </div>
+          <div class="form-group">
+            <label>Custom API Key</label>
+            <input type="password" id="settings-cu-key">
+          </div>
+          <div class="form-group">
+            <label>Custom Model</label>
+            <input type="text" id="settings-cu-model">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/marked.min.js"></script>
+  <script src="/js/app.js" type="module"></script>
+</body>
+
+</html>

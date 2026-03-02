@@ -1,0 +1,208 @@
+{
+  "models": [
+    {
+      "id": "arcee-ai/trinity-large-preview:free",
+      "name": "Arcee AI: Trinity Large Preview (free)",
+      "status": "working",
+      "latency": 193,
+      "preview": "pong"
+    },
+    {
+      "id": "liquid/lfm-2.5-1.2b-instruct:free",
+      "name": "LiquidAI: LFM2.5-1.2B-Instruct (free)",
+      "status": "working",
+      "latency": 219,
+      "preview": "pong"
+    },
+    {
+      "id": "google/gemma-3n-e4b-it:free",
+      "name": "Google: Gemma 3n 4B (free)",
+      "status": "working",
+      "latency": 305,
+      "preview": "pong\n"
+    },
+    {
+      "id": "google/gemma-3n-e2b-it:free",
+      "name": "Google: Gemma 3n 2B (free)",
+      "status": "working",
+      "latency": 396,
+      "preview": "pong\n\n\n\n"
+    },
+    {
+      "id": "qwen/qwen3-vl-235b-a22b-thinking",
+      "name": "Qwen: Qwen3 VL 235B A22B Thinking",
+      "status": "working",
+      "latency": 472,
+      "preview": "pong"
+    },
+    {
+      "id": "qwen/qwen3-vl-30b-a3b-thinking",
+      "name": "Qwen: Qwen3 VL 30B A3B Thinking",
+      "status": "working",
+      "latency": 495,
+      "preview": "pong"
+    },
+    {
+      "id": "qwen/qwen3-235b-a22b-thinking-2507",
+      "name": "Qwen: Qwen3 235B A22B Thinking 2507",
+      "status": "working",
+      "latency": 516,
+      "preview": "pong"
+    },
+    {
+      "id": "google/gemma-3-4b-it:free",
+      "name": "Google: Gemma 3 4B (free)",
+      "status": "working",
+      "latency": 1003,
+      "preview": "pong\n"
+    },
+    {
+      "id": "google/gemma-3-27b-it:free",
+      "name": "Google: Gemma 3 27B (free)",
+      "status": "working",
+      "latency": 1358,
+      "preview": "pong\n"
+    },
+    {
+      "id": "openrouter/free",
+      "name": "Free Models Router",
+      "status": "working",
+      "latency": 1407,
+      "preview": "pong"
+    },
+    {
+      "id": "upstage/solar-pro-3:free",
+      "name": "Upstage: Solar Pro 3 (free)",
+      "status": "working",
+      "latency": 1449,
+      "preview": "pong"
+    },
+    {
+      "id": "google/gemma-3-12b-it:free",
+      "name": "Google: Gemma 3 12B (free)",
+      "status": "working",
+      "latency": 3545,
+      "preview": "pong\n"
+    },
+    {
+      "id": "stepfun/step-3.5-flash:free",
+      "name": "StepFun: Step 3.5 Flash (free)",
+      "status": "error",
+      "error": "Empty response",
+      "latency": 948
+    },
+    {
+      "id": "liquid/lfm-2.5-1.2b-thinking:free",
+      "name": "LiquidAI: LFM2.5-1.2B-Thinking (free)",
+      "status": "error",
+      "error": "Empty response",
+      "latency": 253
+    },
+    {
+      "id": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "name": "NVIDIA: Nemotron 3 Nano 30B A3B (free)",
+      "status": "error",
+      "error": "Empty response",
+      "latency": 332
+    },
+    {
+      "id": "arcee-ai/trinity-mini:free",
+      "name": "Arcee AI: Trinity Mini (free)",
+      "status": "error",
+      "error": "Empty response",
+      "latency": 221
+    },
+    {
+      "id": "nvidia/nemotron-nano-12b-v2-vl:free",
+      "name": "NVIDIA: Nemotron Nano 12B 2 VL (free)",
+      "status": "error",
+      "error": "Empty response",
+      "latency": 347
+    },
+    {
+      "id": "qwen/qwen3-next-80b-a3b-instruct:free",
+      "name": "Qwen: Qwen3 Next 80B A3B Instruct (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 104
+    },
+    {
+      "id": "nvidia/nemotron-nano-9b-v2:free",
+      "name": "NVIDIA: Nemotron Nano 9B V2 (free)",
+      "status": "error",
+      "error": "Empty response",
+      "latency": 298
+    },
+    {
+      "id": "openai/gpt-oss-120b:free",
+      "name": "OpenAI: gpt-oss-120b (free)",
+      "status": "error",
+      "error": "No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy",
+      "latency": 11
+    },
+    {
+      "id": "openai/gpt-oss-20b:free",
+      "name": "OpenAI: gpt-oss-20b (free)",
+      "status": "error",
+      "error": "No endpoints found matching your data policy (Free model publication). Configure: https://openrouter.ai/settings/privacy",
+      "latency": 10
+    },
+    {
+      "id": "z-ai/glm-4.5-air:free",
+      "name": "Z.ai: GLM 4.5 Air (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 699
+    },
+    {
+      "id": "qwen/qwen3-coder:free",
+      "name": "Qwen: Qwen3 Coder 480B A35B (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 159
+    },
+    {
+      "id": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+      "name": "Venice: Uncensored (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 141
+    },
+    {
+      "id": "qwen/qwen3-4b:free",
+      "name": "Qwen: Qwen3 4B (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 520
+    },
+    {
+      "id": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "name": "Mistral: Mistral Small 3.1 24B (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 106
+    },
+    {
+      "id": "meta-llama/llama-3.3-70b-instruct:free",
+      "name": "Meta: Llama 3.3 70B Instruct (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 147
+    },
+    {
+      "id": "meta-llama/llama-3.2-3b-instruct:free",
+      "name": "Meta: Llama 3.2 3B Instruct (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 91
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-405b:free",
+      "name": "Nous: Hermes 3 405B Instruct (free)",
+      "status": "error",
+      "error": "Provider returned error",
+      "latency": 146
+    }
+  ],
+  "testedAt": 1772441649577
+}

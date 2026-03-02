@@ -67,15 +67,30 @@ export function setupProxyRoutes(app) {
         const config = getConfig();
         const body = req.body;
         const isStream = body.stream === true;
+        const modelId = body.model || '';
 
-        console.log(`  🔀 Proxy: ${body.model || 'default'} | stream=${isStream} | msgs=${body.messages?.length || 0}`);
+        // Smart routing: detect if model is an Ollama model vs OpenRouter
+        // Ollama models typically don't have a "/" or use patterns like "qwen2.5-coder:32b"
+        // OpenRouter models always have "org/model" format
+        const isOllamaModel = modelId && (
+            !modelId.includes('/') ||  // No slash = likely Ollama (e.g. "codellama", "qwen2.5-coder:32b")
+            modelId.startsWith('ollama/')  // Explicit ollama/ prefix
+        );
+
+        const routeTo = isOllamaModel ? 'ollama' : config.provider;
+
+        console.log(`  🔀 Proxy: ${modelId || 'default'} | stream=${isStream} | msgs=${body.messages?.length || 0} | route=${routeTo}`);
 
         try {
-            if (config.provider === 'openrouter') {
-                await proxyToOpenRouter(req, res, config, body, isStream);
-            } else if (config.provider === 'ollama') {
+            if (routeTo === 'ollama' || config.provider === 'ollama') {
+                // Strip "ollama/" prefix if present
+                if (body.model?.startsWith('ollama/')) {
+                    body.model = body.model.replace('ollama/', '');
+                }
                 await proxyToOllama(req, res, config, body, isStream);
-            } else if (config.provider === 'custom') {
+            } else if (routeTo === 'openrouter') {
+                await proxyToOpenRouter(req, res, config, body, isStream);
+            } else if (routeTo === 'custom') {
                 await proxyToCustom(req, res, config, body, isStream);
             } else {
                 res.status(503).json({

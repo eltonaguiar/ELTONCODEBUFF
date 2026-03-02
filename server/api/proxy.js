@@ -69,12 +69,12 @@ export function setupProxyRoutes(app) {
         const isStream = body.stream === true;
         const modelId = body.model || '';
 
-        // Smart routing: detect if model is an Ollama model vs OpenRouter
-        // Ollama models typically don't have a "/" or use patterns like "qwen2.5-coder:32b"
-        // OpenRouter models always have "org/model" format
-        const isOllamaModel = modelId && (
-            !modelId.includes('/') ||  // No slash = likely Ollama (e.g. "codellama", "qwen2.5-coder:32b")
-            modelId.startsWith('ollama/')  // Explicit ollama/ prefix
+        // Smart routing: detect Ollama models only when using OpenRouter as primary
+        // Ollama models: no slash (e.g. "codellama", "qwen2.5-coder:32b") or "ollama/" prefix
+        // Only auto-route to Ollama when provider is openrouter (not custom/deepseek)
+        const isOllamaModel = modelId && config.provider !== 'custom' && (
+            modelId.startsWith('ollama/') ||
+            (!modelId.includes('/') && config.provider === 'openrouter')
         );
 
         const routeTo = isOllamaModel ? 'ollama' : config.provider;

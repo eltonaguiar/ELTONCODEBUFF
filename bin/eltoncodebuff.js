@@ -41,12 +41,12 @@ for (let i = 0; i < args.length; i++) {
 const projectPath = flags.cwd || process.cwd();
 const initialPrompt = positional.join(' ');
 
-// ── Colors ──
+// ── Colors (disabled for Windows compat) ──
 const c = {
-    reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m', italic: '\x1b[3m',
-    cyan: '\x1b[36m', green: '\x1b[32m', yellow: '\x1b[33m',
-    magenta: '\x1b[35m', red: '\x1b[31m', gray: '\x1b[90m',
-    blue: '\x1b[34m', white: '\x1b[37m', bgCyan: '\x1b[46m',
+    reset: '', bold: '', dim: '', italic: '',
+    cyan: '', green: '', yellow: '',
+    magenta: '', red: '', gray: '',
+    blue: '', white: '', bgCyan: '',
 };
 
 function showHelp() {
@@ -251,22 +251,21 @@ function showBanner(projectInfo, config, sessionId) {
     const langs = [...projectInfo.languages].slice(0, 4).join(', ') || 'Unknown';
 
     console.log('');
-    console.log(`  ${c.cyan}${c.bold}╔══════════════════════════════════════════════╗${c.reset}`);
-    console.log(`  ${c.cyan}${c.bold}║${c.reset}  ${c.bold}⚡ EltonCodeBuff${c.reset}${' '.repeat(29)}${c.cyan}${c.bold}║${c.reset}`);
-    console.log(`  ${c.cyan}${c.bold}║${c.reset}  ${c.dim}Free AI Coding Assistant${c.reset}${' '.repeat(22)}${c.cyan}${c.bold}║${c.reset}`);
-    console.log(`  ${c.cyan}${c.bold}╚══════════════════════════════════════════════╝${c.reset}`);
+    console.log('  +----------------------------------------------+');
+    console.log('  |  EltonCodeBuff - Free AI Coding Assistant     |');
+    console.log('  +----------------------------------------------+');
     console.log('');
-    console.log(`  ${c.gray}Provider:${c.reset}  ${c.green}${provider}${c.reset} ${c.dim}(${model})${c.reset}`);
-    console.log(`  ${c.gray}Project:${c.reset}   ${path.basename(projectPath)}`);
-    console.log(`  ${c.gray}Files:${c.reset}     ${projectInfo.files} files, ${projectInfo.dirs} dirs`);
-    console.log(`  ${c.gray}Languages:${c.reset} ${langs}`);
+    console.log(`  Provider:  ${provider} (${model})`);
+    console.log(`  Project:   ${path.basename(projectPath)}`);
+    console.log(`  Files:     ${projectInfo.files} files, ${projectInfo.dirs} dirs`);
+    console.log(`  Languages: ${langs}`);
     if (projectInfo.keyFiles.length > 0) {
-        console.log(`  ${c.gray}Key files:${c.reset} ${projectInfo.keyFiles.join(', ')}`);
+        console.log(`  Key files: ${projectInfo.keyFiles.join(', ')}`);
     }
-    console.log(`  ${c.gray}Session:${c.reset}   ${sessionId}`);
+    console.log(`  Session:   ${sessionId}`);
     console.log('');
-    console.log(`  ${c.dim}Type a message to chat. Use /help for commands.${c.reset}`);
-    console.log(`  ${c.dim}The AI has context about your project structure.${c.reset}`);
+    console.log('  Type a message to chat. Use /help for commands.');
+    console.log('  The AI has context about your project structure.');
     console.log('');
 }
 
@@ -314,7 +313,7 @@ Be proactive — suggest improvements and catch potential issues.`
     const rl = createInterface({
         input: process.stdin,
         output: process.stdout,
-        prompt: `  ${c.green}${c.bold}❯${c.reset} `,
+        prompt: '  > ',
     });
 
     rl.prompt();
@@ -386,7 +385,7 @@ Be proactive — suggest improvements and catch potential issues.`
 
         try {
             const allMessages = [systemPrompt, ...messages];
-            process.stdout.write(`\n  ${c.magenta}${c.bold}⚡ EltonCodeBuff${c.reset} ${c.dim}·${c.reset} `);
+            process.stdout.write('\n  [EltonCodeBuff] ');
 
             const reply = await streamChat(allMessages, (chunk) => {
                 process.stdout.write(chunk);

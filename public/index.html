@@ -153,6 +153,8 @@
         <select id="model-selector" class="model-select">
           <option>Loading models...</option>
         </select>
+        <button class="btn btn-sm btn-accent" id="btn-test-models" title="Test which models work">🧪 Test
+          Models</button>
         <button class="btn btn-icon" id="btn-settings" title="Settings">⚙️</button>
       </div>
     </header>
@@ -265,6 +267,31 @@
           </div>
         </div>
         <button class="btn btn-primary btn-full" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Test Results Modal -->
+  <div class="modal hidden" id="model-test-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content" style="max-width: 700px; max-height: 80vh;">
+      <div class="modal-header">
+        <h2>🧪 Model Health Check</h2>
+        <button class="btn btn-icon" id="btn-close-test-modal">✕</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; max-height: 60vh;">
+        <p class="form-hint" style="margin-bottom: 16px;">Testing all free models with a quick message to find which
+          ones are working right now...</p>
+        <div id="model-test-results">
+          <div class="thinking">
+            <div class="thinking-dots">
+              <span class="thinking-dot"></span>
+              <span class="thinking-dot"></span>
+              <span class="thinking-dot"></span>
+            </div>
+            <span>Testing models... this may take 30-60 seconds</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>

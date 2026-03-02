@@ -9,6 +9,7 @@ import open from 'open';
 import { handleChatMessage } from './api/chat.js';
 import { setupFileRoutes } from './api/files.js';
 import { setupProxyRoutes } from './api/proxy.js';
+import { setupHealthRoutes } from './api/health.js';
 import { loadConfig, saveConfig, getConfig } from './config.js';
 
 dotenv.config();
@@ -97,6 +98,9 @@ setupFileRoutes(app);
 //   Base URL: http://localhost:PORT/v1
 //   API Key:  anything (not validated locally)
 setupProxyRoutes(app);
+
+// ── Model Health Check ──────────────────────────────────────
+setupHealthRoutes(app);
 
 // ── WebSocket for streaming chat ────────────────────────────
 wss.on('connection', (ws) => {

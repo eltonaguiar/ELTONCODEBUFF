@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupFileTree();
     setupSettings();
     setupCodeViewer();
+    setupModelTest();
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -740,3 +741,154 @@ function addCopyButtons(container) {
         pre.appendChild(btn);
     });
 }
+
+// ═══════════════════════════════════════════════════════════
+// MODEL HEALTH CHECK
+// ═══════════════════════════════════════════════════════════
+
+function setupModelTest() {
+    const btn = $('#btn-test-models');
+    if (!btn) return;
+
+    btn.addEventListener('click', runModelTest);
+
+    // Close modal
+    $('#btn-close-test-modal').addEventListener('click', () => {
+        $('#model-test-modal').classList.add('hidden');
+    });
+    $('#model-test-modal .modal-backdrop').addEventListener('click', () => {
+        $('#model-test-modal').classList.add('hidden');
+    });
+}
+
+async function runModelTest() {
+    // Show modal
+    $('#model-test-modal').classList.remove('hidden');
+    const resultsEl = $('#model-test-results');
+    resultsEl.innerHTML = `
+        <div class="thinking">
+            <div class="thinking-dots">
+                <span class="thinking-dot"></span>
+                <span class="thinking-dot"></span>
+                <span class="thinking-dot"></span>
+            </div>
+            <span>Testing all free models... this may take 30-60 seconds</span>
+        </div>
+    `;
+
+    try {
+        const res = await fetch('/api/health/test', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.error) {
+            resultsEl.innerHTML = `<div class="error-msg">⚠️ ${escapeHtml(data.error)}</div>`;
+            return;
+        }
+
+        renderTestResults(data.models);
+    } catch (err) {
+        resultsEl.innerHTML = `<div class="error-msg">⚠️ Failed to test models: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+function renderTestResults(models) {
+    const resultsEl = $('#model-test-results');
+    const working = models.filter(m => m.status === 'working');
+    const broken = models.filter(m => m.status !== 'working');
+
+    let html = `<div style="margin-bottom: 16px; font-size: 14px;">
+        <strong style="color: var(--green);">✅ ${working.length} working</strong> &nbsp;·&nbsp;
+        <strong style="color: var(--red);">❌ ${broken.length} unavailable</strong>
+        &nbsp;·&nbsp; <span style="color: var(--text-tertiary);">Click a working model to select it</span>
+    </div>`;
+
+    if (working.length > 0) {
+        html += '<h3 style="font-size:14px; margin-bottom:8px; color:var(--green);">✅ Working Models</h3>';
+        for (const m of working) {
+            html += `
+                <div class="model-test-row model-test-working" data-model-id="${escapeHtml(m.id)}" style="
+                    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                    background: var(--green-soft); border: 1px solid rgba(52,211,153,0.2);
+                    border-radius: var(--radius-md); margin-bottom: 6px; cursor: pointer;
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='rgba(52,211,153,0.2)'">
+                    <span style="color:var(--green); font-size:16px;">✅</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:13px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(m.name || m.id)}</div>
+                        <div style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono);">${escapeHtml(m.id)}</div>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="font-size:12px; color:var(--green); font-weight:600;">${m.latency}ms</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    if (broken.length > 0) {
+        html += '<h3 style="font-size:14px; margin: 16px 0 8px; color:var(--red);">❌ Unavailable</h3>';
+        for (const m of broken) {
+            html += `
+                <div style="
+                    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+                    background: var(--red-soft); border: 1px solid rgba(248,113,113,0.1);
+                    border-radius: var(--radius-md); margin-bottom: 4px; opacity: 0.7;
+                ">
+                    <span style="color:var(--red); font-size:14px;">❌</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:12px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(m.id)}</div>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-tertiary); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(m.error || '')}">${escapeHtml(m.error || 'Unknown error')}</div>
+                </div>
+            `;
+        }
+    }
+
+    resultsEl.innerHTML = html;
+
+    // Add click handlers to select working models
+    resultsEl.querySelectorAll('.model-test-working').forEach(row => {
+        row.addEventListener('click', async () => {
+            const modelId = row.dataset.modelId;
+            // Update the model selector
+            const select = $('#model-selector');
+            let found = false;
+            for (const opt of select.options) {
+                if (opt.value === modelId) {
+                    opt.selected = true;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                const opt = document.createElement('option');
+                opt.value = modelId;
+                opt.textContent = `✅ ${modelId}`;
+                opt.selected = true;
+                select.prepend(opt);
+            }
+
+            // Save to config
+            try {
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ openrouter_model: modelId }),
+                });
+            } catch { }
+
+            // Visual feedback
+            row.style.borderColor = 'var(--accent)';
+            row.style.background = 'var(--accent-soft)';
+            row.querySelector('div > div').insertAdjacentHTML('afterend',
+                '<div style="font-size:11px; color:var(--accent); font-weight:600; margin-top:2px;">✓ Selected as active model</div>'
+            );
+
+            // Close modal after brief delay
+            setTimeout(() => {
+                $('#model-test-modal').classList.add('hidden');
+            }, 1000);
+        });
+    });
+}
+

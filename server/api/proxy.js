@@ -159,7 +159,7 @@ export function setupProxyRoutes(app) {
 
 async function proxyToOpenRouter(req, res, config, body, isStream) {
     // Use model from request, fall back to configured default
-    const model = body.model || config.openrouter_model || 'meta-llama/llama-4-maverick:free';
+    const model = body.model || config.openrouter_model || 'google/gemma-3n-e2b-it:free';
 
     const upstreamBody = {
         ...body,
@@ -202,6 +202,22 @@ async function proxyToOpenRouter(req, res, config, body, isStream) {
     } else {
         // Non-streaming: return JSON directly
         const data = await upstreamResp.json();
+
+        // Fix: Some models return empty content but have reasoning/thinking
+        // Ensure there's always an assistant message with content
+        if (data.choices && data.choices.length > 0) {
+            const choice = data.choices[0];
+            const msg = choice.message;
+            if (msg && (!msg.content || msg.content.trim() === '')) {
+                // Try to extract content from alternative fields
+                msg.content = msg.reasoning || msg.thinking || msg.text || '(Model returned empty response. Try a different model.)';
+                msg.role = msg.role || 'assistant';
+            }
+            if (!msg) {
+                choice.message = { role: 'assistant', content: '(Model returned no message. Try a different model.)' };
+            }
+        }
+
         res.status(upstreamResp.status).json(data);
     }
 }
@@ -210,21 +226,28 @@ async function proxyToOllama(req, res, config, body, isStream) {
     const base = config.ollama_base_url || 'http://localhost:11434';
     const model = body.model || config.ollama_model || 'codellama';
 
+    // Build Ollama request — pass tools if provided
+    const ollamaBody = {
+        model,
+        messages: body.messages,
+        stream: isStream,
+        options: {
+            temperature: body.temperature ?? 0.3,
+            num_predict: body.max_tokens ?? 4096,
+            top_p: body.top_p,
+        },
+    };
+
+    // Pass tools for function calling (Roo Code needs this)
+    if (body.tools && body.tools.length > 0) {
+        ollamaBody.tools = body.tools;
+    }
+
     if (isStream) {
-        // Ollama has its own streaming format — we need to convert to OpenAI SSE format
         const ollamaResp = await fetch(`${base}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model,
-                messages: body.messages,
-                stream: true,
-                options: {
-                    temperature: body.temperature ?? 0.3,
-                    num_predict: body.max_tokens ?? 4096,
-                    top_p: body.top_p,
-                },
-            }),
+            body: JSON.stringify(ollamaBody),
         });
 
         res.setHeader('Content-Type', 'text/event-stream');
@@ -235,6 +258,7 @@ async function proxyToOllama(req, res, config, body, isStream) {
         const decoder = new TextDecoder();
         let buffer = '';
         const completionId = 'chatcmpl-' + Date.now();
+        let sentRole = false;
 
         try {
             while (true) {
@@ -252,7 +276,32 @@ async function proxyToOllama(req, res, config, body, isStream) {
                         const ollamaMsg = JSON.parse(trimmed);
 
                         if (ollamaMsg.done) {
-                            // Send final chunk
+                            // Check if there are tool calls in the final message
+                            if (ollamaMsg.message?.tool_calls && ollamaMsg.message.tool_calls.length > 0) {
+                                const toolCalls = ollamaMsg.message.tool_calls.map((tc, i) => ({
+                                    id: `call_${Date.now()}_${i}`,
+                                    type: 'function',
+                                    function: {
+                                        name: tc.function.name,
+                                        arguments: typeof tc.function.arguments === 'string'
+                                            ? tc.function.arguments
+                                            : JSON.stringify(tc.function.arguments),
+                                    },
+                                }));
+                                const tcChunk = {
+                                    id: completionId,
+                                    object: 'chat.completion.chunk',
+                                    created: Math.floor(Date.now() / 1000),
+                                    model,
+                                    choices: [{
+                                        index: 0,
+                                        delta: { role: 'assistant', tool_calls: toolCalls },
+                                        finish_reason: null,
+                                    }],
+                                };
+                                res.write(`data: ${JSON.stringify(tcChunk)}\n\n`);
+                            }
+
                             const finalChunk = {
                                 id: completionId,
                                 object: 'chat.completion.chunk',
@@ -261,13 +310,17 @@ async function proxyToOllama(req, res, config, body, isStream) {
                                 choices: [{
                                     index: 0,
                                     delta: {},
-                                    finish_reason: 'stop',
+                                    finish_reason: ollamaMsg.message?.tool_calls ? 'tool_calls' : 'stop',
                                 }],
                             };
                             res.write(`data: ${JSON.stringify(finalChunk)}\n\n`);
                             res.write('data: [DONE]\n\n');
                         } else if (ollamaMsg.message?.content) {
-                            // Convert to OpenAI SSE format
+                            const delta = { content: ollamaMsg.message.content };
+                            if (!sentRole) {
+                                delta.role = 'assistant';
+                                sentRole = true;
+                            }
                             const chunk = {
                                 id: completionId,
                                 object: 'chat.completion.chunk',
@@ -275,7 +328,31 @@ async function proxyToOllama(req, res, config, body, isStream) {
                                 model,
                                 choices: [{
                                     index: 0,
-                                    delta: { content: ollamaMsg.message.content },
+                                    delta,
+                                    finish_reason: null,
+                                }],
+                            };
+                            res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                        } else if (ollamaMsg.message?.tool_calls) {
+                            // Tool call mid-stream
+                            const toolCalls = ollamaMsg.message.tool_calls.map((tc, i) => ({
+                                id: `call_${Date.now()}_${i}`,
+                                type: 'function',
+                                function: {
+                                    name: tc.function.name,
+                                    arguments: typeof tc.function.arguments === 'string'
+                                        ? tc.function.arguments
+                                        : JSON.stringify(tc.function.arguments),
+                                },
+                            }));
+                            const chunk = {
+                                id: completionId,
+                                object: 'chat.completion.chunk',
+                                created: Math.floor(Date.now() / 1000),
+                                model,
+                                choices: [{
+                                    index: 0,
+                                    delta: { role: 'assistant', tool_calls: toolCalls },
                                     finish_reason: null,
                                 }],
                             };
@@ -296,20 +373,37 @@ async function proxyToOllama(req, res, config, body, isStream) {
         const ollamaResp = await fetch(`${base}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model,
-                messages: body.messages,
-                stream: false,
-                options: {
-                    temperature: body.temperature ?? 0.3,
-                    num_predict: body.max_tokens ?? 4096,
-                },
-            }),
+            body: JSON.stringify(ollamaBody),
         });
 
         const ollamaData = await ollamaResp.json();
 
-        // Convert Ollama response to OpenAI format
+        // Build OpenAI-format message
+        const message = {
+            role: 'assistant',
+            content: ollamaData.message?.content || null,
+        };
+
+        // Convert tool calls from Ollama format to OpenAI format
+        if (ollamaData.message?.tool_calls && ollamaData.message.tool_calls.length > 0) {
+            message.tool_calls = ollamaData.message.tool_calls.map((tc, i) => ({
+                id: `call_${Date.now()}_${i}`,
+                type: 'function',
+                function: {
+                    name: tc.function.name,
+                    arguments: typeof tc.function.arguments === 'string'
+                        ? tc.function.arguments
+                        : JSON.stringify(tc.function.arguments),
+                },
+            }));
+            if (!message.content) message.content = '';
+        }
+
+        // Ensure there's always content for Roo Code
+        if (!message.content && !message.tool_calls) {
+            message.content = '(Model returned empty response)';
+        }
+
         const openaiResp = {
             id: 'chatcmpl-' + Date.now(),
             object: 'chat.completion',
@@ -317,11 +411,8 @@ async function proxyToOllama(req, res, config, body, isStream) {
             model,
             choices: [{
                 index: 0,
-                message: {
-                    role: 'assistant',
-                    content: ollamaData.message?.content || '',
-                },
-                finish_reason: 'stop',
+                message,
+                finish_reason: message.tool_calls ? 'tool_calls' : 'stop',
             }],
             usage: {
                 prompt_tokens: ollamaData.prompt_eval_count || 0,

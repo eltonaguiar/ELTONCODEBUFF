@@ -8,11 +8,29 @@
  */
 
 import { getConfig } from '../config.js';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
-// Cache results for 10 minutes to avoid hammering
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const RESULTS_PATH = path.resolve(__dirname, '..', '..', 'eltoncodebuff-models.json');
+
+// Cache results
 let cachedResults = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+// Load previous results from disk on startup
+try {
+    if (fs.existsSync(RESULTS_PATH)) {
+        const saved = JSON.parse(fs.readFileSync(RESULTS_PATH, 'utf-8'));
+        cachedResults = saved.models;
+        cacheTimestamp = saved.testedAt || 0;
+        const working = cachedResults.filter(m => m.status === 'working').length;
+        console.log(`  🧪 Loaded ${working} working models from previous scan`);
+    }
+} catch { }
 
 export function setupHealthRoutes(app) {
 
@@ -64,11 +82,24 @@ export function setupHealthRoutes(app) {
             const results = await testFreeModels(config);
             cachedResults = results;
             cacheTimestamp = Date.now();
+            // Persist to disk
+            try { fs.writeFileSync(RESULTS_PATH, JSON.stringify({ models: results, testedAt: cacheTimestamp }, null, 2)); } catch { }
             console.log(`  🧪 Health check complete: ${results.filter(r => r.status === 'working').length}/${results.length} models working`);
             res.json({ models: results, cached: false, testedAt: cacheTimestamp });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
+    });
+
+    // GET /api/health/working — plain text list of working model IDs (easy copy-paste)
+    app.get('/api/health/working', (req, res) => {
+        if (!cachedResults) {
+            return res.type('text').send('No scan results yet. Run a test first via POST /api/health/test');
+        }
+        const working = cachedResults.filter(m => m.status === 'working');
+        const lines = working.map(m => m.id);
+        const timestamp = new Date(cacheTimestamp).toLocaleString();
+        res.type('text').send(`# Working Free Models (scanned: ${timestamp})\n# ${working.length} models available\n\n${lines.join('\n')}\n`);
     });
 
     console.log('  🧪 Model health check active at /api/health/*');

@@ -765,6 +765,22 @@ async function runModelTest() {
     // Show modal
     $('#model-test-modal').classList.remove('hidden');
     const resultsEl = $('#model-test-results');
+
+    // First try to load cached results
+    try {
+        const cached = await fetch('/api/health/models');
+        const data = await cached.json();
+        if (data.models && data.models.length > 0 && data.testedAt) {
+            renderTestResults(data.models, data.testedAt);
+            return; // Show cached, user can rescan
+        }
+    } catch { }
+
+    // No cache — run fresh test
+    await freshModelTest(resultsEl);
+}
+
+async function freshModelTest(resultsEl) {
     resultsEl.innerHTML = `
         <div class="thinking">
             <div class="thinking-dots">
@@ -785,22 +801,32 @@ async function runModelTest() {
             return;
         }
 
-        renderTestResults(data.models);
+        renderTestResults(data.models, data.testedAt);
     } catch (err) {
         resultsEl.innerHTML = `<div class="error-msg">⚠️ Failed to test models: ${escapeHtml(err.message)}</div>`;
     }
 }
 
-function renderTestResults(models) {
+function renderTestResults(models, testedAt) {
     const resultsEl = $('#model-test-results');
     const working = models.filter(m => m.status === 'working');
     const broken = models.filter(m => m.status !== 'working');
+    const scanTime = testedAt ? new Date(testedAt).toLocaleString() : 'Unknown';
 
-    let html = `<div style="margin-bottom: 16px; font-size: 14px;">
-        <strong style="color: var(--green);">✅ ${working.length} working</strong> &nbsp;·&nbsp;
-        <strong style="color: var(--red);">❌ ${broken.length} unavailable</strong>
-        &nbsp;·&nbsp; <span style="color: var(--text-tertiary);">Click a working model to select it</span>
+    let html = `<div style="margin-bottom: 12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div style="font-size: 14px;">
+            <strong style="color: var(--green);">✅ ${working.length} working</strong> &nbsp;·&nbsp;
+            <strong style="color: var(--red);">❌ ${broken.length} unavailable</strong>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button id="btn-copy-all-models" class="btn btn-sm btn-ghost" style="font-size:12px;">📋 Copy All IDs</button>
+            <button id="btn-rescan-models" class="btn btn-sm btn-accent" style="font-size:12px;">🔄 Rescan</button>
+        </div>
+    </div>
+    <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:12px;">
+        🕐 Last scan: ${scanTime} &nbsp;·&nbsp; Click a model to select it &nbsp;·&nbsp; Click the ID to copy
     </div>`;
+
 
     if (working.length > 0) {
         html += '<h3 style="font-size:14px; margin-bottom:8px; color:var(--green);">✅ Working Models</h3>';
@@ -890,5 +916,25 @@ function renderTestResults(models) {
             }, 1000);
         });
     });
-}
 
+    // Copy all working model IDs
+    const copyAllBtn = $('#btn-copy-all-models');
+    if (copyAllBtn) {
+        copyAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const ids = working.map(m => m.id).join('\n');
+            navigator.clipboard.writeText(ids);
+            copyAllBtn.textContent = '✅ Copied!';
+            setTimeout(() => { copyAllBtn.textContent = '📋 Copy All IDs'; }, 2000);
+        });
+    }
+
+    // Rescan button
+    const rescanBtn = $('#btn-rescan-models');
+    if (rescanBtn) {
+        rescanBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            freshModelTest($('#model-test-results'));
+        });
+    }
+}
